@@ -1,6 +1,8 @@
 const {hash, compare} = require('bcrypt')
-const knex = require('../database/knex')
 const AppError = require('../utils/AppError')
+const knex = require('../database/knex')
+const UserRepository = require("../repositories/UserRepository")
+const UserCreateService = require("../services/UserCreateService")
 
 class UserController{
     async index(request, response){
@@ -15,30 +17,10 @@ class UserController{
     async create(request, response){
         const {name, email, password} = request.body
 
-        const checkPassword = String(password).length
+        const userRepository = new UserRepository;
+        const userCreateService = new UserCreateService(userRepository)
 
-        if(checkPassword < 6){
-            throw new AppError('Insira uma senha com mais de 6 caracteres por favor!')
-        }
-
-        if(!name){
-            throw new AppError('Insira o seu nome, por favor!')
-        }
-        
-        const emailExist = await knex('users').where({email}).first()
-
-
-        if(emailExist){
-            throw new AppError('Esse email já esta registrado, tente com algum outro!')
-        }
-
-        const hashedPassword = await hash(password, 8)
-
-        await knex('users').insert({
-            name,
-            email,
-            password: hashedPassword,
-        })
+        await userCreateService.execute({name, email, password})
 
         return response.status(201).json()       
     }

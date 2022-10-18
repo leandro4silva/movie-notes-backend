@@ -1,5 +1,7 @@
 const knex = require('../database/knex')
 const AppError = require('../utils/AppError')
+const NoteRepository = require("../repositories/NoteRepository")
+const NoteCreateService = require("../services/NoteCreateService")
 
 
 class NoteController {
@@ -8,38 +10,12 @@ class NoteController {
         const { title, description, rating, tags } = request.body
         const user_id = request.user.id
 
-        if (!title) {
-            throw new AppError('Informe o nome da anotação, por favor!')
-        }
 
-        if (!description) {
-            throw new AppError('Informe uma descrição, por favor!')
-        }
+        const noteRepository = new NoteRepository()
+        const noteCreateService = new NoteCreateService(noteRepository)
 
-        if (!rating) {
-            throw new AppError('Informe a avaliação para o filme, por favor!')
-        }
-
-        const insertNotes = await knex('notes').insert({
-            title,
-            description,
-            rating,
-            user_id
-        })
-
-        if (tags) {
-
-            const insertTags = tags.map(tag => {
-                return {
-                    name: tag,
-                    note_id: insertNotes[0],
-                    user_id
-                }
-            })
-
-            await knex('tags').insert(insertTags)
-        }
-
+        await noteCreateService.execute({ title, description, rating, tags, user_id })
+        
         return response.status(201).json()
     }
 
